@@ -1,0 +1,157 @@
+__kernel void adder(__global const uchar* d_frame_in, 
+					 const int height, 
+					 const int width, 
+					__global uchar* d_frame_out)
+{
+	int idx = get_global_id(0);
+	int x=0;
+	int y=0;
+	int z=0;
+	double total=0;
+	//d_frame_out[idx] = 255 - d_frame_in[idx];
+	/*if (idx%3==0){
+		total = 0.299*d_frame_in[idx] + 0.587*d_frame_in[idx+1] + 0.114*d_frame_in[idx+2];
+		d_frame_out[idx] = total;
+		d_frame_out[idx+1] = total;
+		d_frame_out[idx+2] = total;
+	}*/
+
+	if (idx%3==0){
+		float index = convert_float(idx)/3;
+		float wi = convert_float(width);
+		float hi = convert_float(hi);
+		//index=(y*width+x)*3+z;
+		//index=(y*width+x)*3;
+		//index/3=y*width+x;
+
+		x=convert_int(index)%width;
+		y=convert_int((index-x)/wi);
+		
+
+		int wi2 = convert_int(wi/2);
+		int hi2 = convert_int(hi/2);
+
+		//int rr = (x-wi2)*(x-wi2)+(y-hi2)*(y-hi2);
+		float rr = (x-512)*(x-512)+(y-384)*(y-384);
+		rr = sqrt(rr);
+		int rr2 = convert_int(rr);
+		if (rr2%100==rr2%200){
+			d_frame_out[idx] = 255;
+			d_frame_out[idx+1] = 255;
+			d_frame_out[idx+2] = 255;
+		} else {
+			d_frame_out[idx] = 0;
+			d_frame_out[idx+1] = 0;
+			d_frame_out[idx+2] = 0;
+		}
+	}
+
+	/*if (idx<1024*3*256){
+		if (idx%3==0){
+			d_frame_out[idx]=d_frame_in[idx];
+		} else if (idx%3==1){
+			d_frame_out[idx]=0;
+		} else if (idx%3==2){
+			d_frame_out[idx]=0;
+		}
+	} else if (idx<1024*3*256*2){
+		if (idx%3==0){
+			d_frame_out[idx]=0;
+		} else if (idx%3==1){
+			d_frame_out[idx]=d_frame_in[idx];
+		} else if (idx%3==2){
+			d_frame_out[idx]=0;
+		}
+	} else {
+		if (idx%3==0){
+			d_frame_out[idx]=0;
+		} else if (idx%3==1){
+			d_frame_out[idx]=0;
+		} else if (idx%3==2){
+			d_frame_out[idx]=d_frame_in[idx];
+		}
+	}*/
+	
+
+	/*for(y=0;y<height;y++) {
+		for(z=0;z<3;z++) {
+			int index=(y*width+idx)*3+z;
+			int index2=(y*width+idx)*3+z;
+			d_frame_out[index] = 255 - d_frame_in[index2];
+		}
+	}*/
+
+	/*for(int y=0;y<height;y++) {
+		int index=(y*width+idx)*3;
+		total = 0.299*d_frame_in[index] + 0.587*d_frame_in[index+1] + 0.114*d_frame_in[index+2]; 
+
+		for(int z=0;z<3;z++) {
+			index=(y*width+idx)*3+z;
+			d_frame_out[index] = (uchar)total;
+		}
+	}*/
+}
+
+/*if (x2>=0 && y2>=0){
+
+		if (x2<w2 && y2<h2){
+
+			/*d_frame_out[tmp] = d_frame_in2[tmp2];
+			d_frame_out[tmp+1] = d_frame_in2[tmp2+1];
+			d_frame_out[tmp+2] = d_frame_in2[tmp2+2];*/
+
+			d_frame_out[tmp] = 255;
+			d_frame_out[tmp+1] = 255;
+			d_frame_out[tmp+2] = 255;
+
+			/*d_frame_out[tmp] = d_frame_in1[tmp];
+			d_frame_out[tmp+1] = d_frame_in1[tmp+1];
+			d_frame_out[tmp+2] = d_frame_in1[tmp+2];*/
+		} else {
+			d_frame_out[tmp] = d_frame_in1[tmp];
+			d_frame_out[tmp+1] = d_frame_in1[tmp+1];
+			d_frame_out[tmp+2] = d_frame_in1[tmp+2];
+		}
+	} else {
+		d_frame_out[tmp] = d_frame_in1[tmp];
+		d_frame_out[tmp+1] = d_frame_in1[tmp+1];
+		d_frame_out[tmp+2] = d_frame_in1[tmp+2];
+	}*/
+
+	if (x1==1 && y1==1){
+		/*d_frame_out[tmp] = d_frame_in2[tmp2];
+		d_frame_out[tmp+1] = d_frame_in2[tmp2+1];
+		d_frame_out[tmp+2] = d_frame_in2[tmp2+2];*/
+
+		d_frame_out[tmp] = 255;
+		d_frame_out[tmp-1] = 255;
+		d_frame_out[tmp+2] = 255;
+
+		/*d_frame_out[tmp] = d_frame_in1[tmp];
+		d_frame_out[tmp+1] = d_frame_in1[tmp+1];
+		d_frame_out[tmp+2] = d_frame_in1[tmp+2];*/
+	} else {
+		//d_frame_out[tmp] = d_frame_in1[tmp];
+		//d_frame_out[tmp+1] = d_frame_in1[tmp+1];
+		//d_frame_out[tmp+2] = d_frame_in1[tmp+2];
+		d_frame_out[tmp] = 0;
+		d_frame_out[tmp+1] = 0;
+		d_frame_out[tmp+2] = 0;
+	}
+
+	for (int y1=0;y1<h1;y1++){
+		int tmp = (y1*w1+idx)*3;
+		/*d_frame_out[tmp] = 255;
+		d_frame_out[tmp+1] = 255;
+		d_frame_out[tmp+2] = 255;*/
+		
+		if (idx==0){
+			d_frame_out[tmp] = 255;
+			d_frame_out[tmp+1] = 255;
+			d_frame_out[tmp+2] = 255;
+		} else {
+			d_frame_out[tmp] = d_frame_in1[tmp];
+			d_frame_out[tmp+1] = d_frame_in1[tmp+1];
+			d_frame_out[tmp+2] = d_frame_in1[tmp+2];
+		}
+	}

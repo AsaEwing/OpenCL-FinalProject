@@ -1,0 +1,61 @@
+    /////////////////////前置作業 二維轉一維
+    for (int dirTmp=0;dirTmp<dir;dirTmp++){
+        int tmpAngle = dirTmp*modAngle;
+        double tmpRadian = RADIANOF(tmpAngle);
+        int tmpRange = tmpAngle/45;
+        double tmpSin = sin(tmpRadian);
+        double tmpCos = cos(tmpRadian);
+
+        if (tmpRange==0 || tmpRange==3){
+            //(sx-r-0.5)/c < y < (sx-r+0.5)/c
+            for (int lineNumber=0;lineNumber<lineCount;lineNumber++){
+                out1_array[dirTmp][lineNumber][2]=tmpSin;
+                out1_array[dirTmp][lineNumber][3]=tmpCos;
+
+                out1_array[dirTmp+dir][lineCount-1-lineNumber][2]=-tmpSin;
+                out1_array[dirTmp+dir][lineCount-1-lineNumber][3]=-tmpCos;
+
+                int tmpLineCount = 0;
+                int tmpLineAdd = 0;
+                for (int y=0;y<arrayXY;y++){
+                    for (int x=0;x<arrayXY;x++){
+                        double tmpDis = abs(tmpSin*(double)(x-lineHalf)-tmpCos*(double)(y-lineHalf)-lineNumber);
+                        if (tmpDis<0.5){
+                            tmpLineCount++;
+                            tmpLineAdd+=dataIn[y*arrayXY+x];
+                        }
+                    }
+                }
+                out1_array[dirTmp][lineNumber][0]=tmpLineAdd;
+                out1_array[dirTmp][lineNumber][1]=tmpLineCount;
+                out1_array[dirTmp+dir][lineCount-1-lineNumber][0]=tmpLineAdd;
+                out1_array[dirTmp+dir][lineCount-1-lineNumber][1]=tmpLineCount;
+            }
+
+        } else if (tmpRange==1 || tmpRange==2) {
+            //(cy+r-0.5)/s < x < (cy+r+0.5)/s
+            for (int lineNumber=0;lineNumber<lineCount;lineNumber++){
+                out1_array[dirTmp][lineNumber][2]=tmpSin;
+                out1_array[dirTmp][lineNumber][3]=tmpCos;
+
+                out1_array[dirTmp+dir][lineCount-1-lineNumber][2]=-tmpSin;
+                out1_array[dirTmp+dir][lineCount-1-lineNumber][3]=-tmpCos;
+
+                int tmpLineCount = 0;
+                int tmpLineAdd = 0;
+                for (int y=0;y<arrayXY;y++){
+                    for (int x=0;x<arrayXY;x++){
+                        double tmpDis = abs(tmpSin*(double)(x-lineHalf)-tmpCos*(double)(y-lineHalf)-lineNumber);
+                        if (tmpDis<0.5){
+                            tmpLineCount++;
+                            tmpLineAdd+=dataIn[y*arrayXY+x];
+                        }
+                    }
+                }
+                out1_array[dirTmp][lineNumber][0]=tmpLineAdd;
+                out1_array[dirTmp][lineNumber][1]=tmpLineCount;
+                out1_array[dirTmp+dir][lineCount-1-lineNumber][0]=tmpLineAdd;
+                out1_array[dirTmp+dir][lineCount-1-lineNumber][1]=tmpLineCount;
+            }
+        }
+    }

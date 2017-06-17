@@ -1,0 +1,94 @@
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
+#include <cuda.h>
+#include <stdio.h>
+#include <opencv2/core/core.hpp>
+#include <opencv2/opencv.hpp> 
+#include <opencv2/highgui/highgui.hpp>
+#include <omp.h>
+#include <math.h>
+#define g_h 50  //網格高度
+#define g_w 50  //網格寬度
+
+
+
+
+__global__ void Brite(uchar *d_frame_in, uchar *d_frame_out, int height, int width, int b)
+{
+	int x = threadIdx.x + blockIdx.x * blockDim.x;
+	//(x-500)^2+(y-300)^2=0
+	
+	for(int y=0;y<height;y++)
+	{
+		for(int z=0;z<3;z++)
+		{	
+			float tmp = (x-512)*(x-512)+(y-384)*(y-384);
+			tmp = sqrt(tmp);
+			
+			int tmp00 = (int)tmp;
+			
+			
+			if( tmp00%100 == tmp00%200){
+				d_frame_out[(y*width+x)*3+z] = 255-d_frame_in[((y)*width+(x))*3+z];
+			} else {
+				d_frame_out[(y*width+x)*3+z] = d_frame_in[((y)*width+(x))*3+z];
+			}
+		}          
+	}	
+}
+
+int main()
+{
+	double omp_get_wtime(void);
+	double startCK, finishCK;
+
+	startCK = omp_get_wtime();
+	//////////////////////////////////////////////////////////////////
+	int brite=100;
+
+	int height, width;
+	uchar *data1;
+
+    IplImage *Image1=cvLoadImage("Koala.jpg",1);
+    
+	height = Image1->height;
+	width = Image1->width;	
+
+	data1 = (uchar *)Image1->imageData;
+      
+    cvNamedWindow("Result",CV_WINDOW_AUTOSIZE);
+   
+  
+    uchar *d_frame_in;
+    uchar *d_frame_out;
+    cudaMalloc((void**)&d_frame_in,sizeof(uchar)*(height * width * 3));
+    cudaMalloc((void**)&d_frame_out,sizeof(uchar)*(height * width * 3));
+	cudaMemcpy(d_frame_in, data1,sizeof(uchar)*(height * width * 3),cudaMemcpyHostToDevice);
+	Brite<<<32,32>>>(d_frame_in, d_frame_out, height, width, brite);
+	cudaMemcpy(data1,d_frame_out,sizeof(uchar)*(height * width * 3),cudaMemcpyDeviceToHost);
+    
+    ////////////////////////////////////////////////
+    printf("\n");
+
+	finishCK = omp_get_wtime();
+	double duration = (double)(finishCK - startCK);
+
+	if (duration > 1) {
+		printf("It took me clicks (%f s).\n\n", duration);
+	} else {
+		printf("It took me clicks (%f ms).\n\n", duration * 1000);
+	}
+	
+	cvShowImage("Result",Image1);
+    cvWaitKey(0); 
+     
+    cudaFree(d_frame_in);
+    cudaFree(d_frame_out);
+    cvDestroyWindow("Result");
+
+	system("PAUSE");
+    return 0;
+}
+
+
+

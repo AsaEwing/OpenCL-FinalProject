@@ -1,0 +1,12 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "0.1.0",
+    //"command": "g++",
+    "command": "./build",
+    //g++ $(pkg-config --cflags --libs opencv) -g main.cpp -framework opencl
+    "isShellCommand": true,
+    //"args": ["$(pkg-config --cflags --libs opencv)","-g","main.cpp","-framework","opencl"],
+    //"args": ["g++ $(pkg-config --cflags --libs opencv) -g main.cpp -framework opencl"],
+    "showOutput": "always"
+}
