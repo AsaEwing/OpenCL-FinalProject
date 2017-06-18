@@ -1,4 +1,4 @@
 #!/bin/zsh
-g++-7 $(pkg-config --cflags --libs opencv) -g -fopenmp main11.cpp -framework opencl
+g++-7 $(pkg-config --cflags --libs opencv) -g -fopenmp main12.cpp -framework opencl
 #g++-7 $(pkg-config --cflags --libs opencv) -g -fopenmp test01.cpp -framework opencl -framework OpenGL -framework GLUT -framework Foundation
 #g++-7 $(pkg-config --cflags --libs /usr/local/Cellar/opencv3/3.2.0/lib/pkgconfig/opencv.pc) -g -fopenmp test01.cpp -framework opencl

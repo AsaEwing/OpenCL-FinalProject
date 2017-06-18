@@ -32,6 +32,7 @@
 using namespace cv;
 using namespace std;
 
+//CL載入Program
 cl_program load_program(cl_context context, const char* filename) {
     ifstream in(filename, ios_base::binary);
     if(!in.good()) {
@@ -64,6 +65,7 @@ cl_program load_program(cl_context context, const char* filename) {
 
     return program;
 }
+
 //二維轉一維(有平行)
 void parallel_in2_out1(int arrayXY, int dirTmp, int modAngle, float* dataIn, float** out1_array){
 	/*
@@ -98,32 +100,6 @@ void parallel_in2_out1(int arrayXY, int dirTmp, int modAngle, float* dataIn, flo
         tmp_dataIn[i]=dataIn[i];
     }
     float* tmp_dataInIndex = (float *)tmp_dataIn;
-
-    /*for (int j=0;j<200;j++){
-        cout << "dataIn : "<< j << " , " << dataIn[j] << " , " << tmp_dataInIndex[j] << endl;
-    }*/
-    
-
-    /*for (int lineNumber=0;lineNumber<lineCount;lineNumber++){
-        out1_array[lineNumber][3]=tmpCos;
-        out1_array[lineNumber][2]=tmpSin;
-
-        double tmpLineCount = 0;    //該線經過幾格的格數
-        double tmpLineAdd = 0;      //該線經過之地的加總數值
-        for (int y=0;y<arrayXY;y++){
-            for (int x=0;x<arrayXY;x++){
-                //用距離公式判斷是否該線有經過該XY
-                double tmpDis = abs(tmpSin*(double)(x-lineHalf)-tmpCos*(double)(y-lineHalf)-(lineNumber-lineHalf));
-                if (tmpDis<0.5){
-                    tmpLineCount++;
-                    tmpLineAdd+=dataIn[y*arrayXY+x];
-                }
-            }
-        }
-        
-        out1_array[lineNumber][0]=tmpLineAdd;
-        out1_array[lineNumber][1]=tmpLineCount;
-    }*/
 
     /////////////////////CL 配置
 	cl_int err;
@@ -172,7 +148,6 @@ void parallel_in2_out1(int arrayXY, int dirTmp, int modAngle, float* dataIn, flo
     cl_mem cl_const = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(float)*5, &tmpConstIndex[0], NULL);
     cl_mem cl_data_in = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(float)*arrayXY*arrayXY, &tmp_dataInIndex[0], NULL);
     cl_mem cl_out1_array = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(float)*lineCount*4, NULL, NULL);//out1_array
-    //cl_mem cl_out1_array = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(double)*lineCount*4, &out1_array[0], NULL);//out1_array
 
     if(cl_const == 0 || cl_data_in == 0 || cl_out1_array == 0) {
         cerr << "Can't create OpenCL buffer\n";
@@ -215,22 +190,17 @@ void parallel_in2_out1(int arrayXY, int dirTmp, int modAngle, float* dataIn, flo
     clSetKernelArg(adder, 2, sizeof(cl_out1_array), &cl_out1_array);
 
     size_t work_size = lineCount;
+
     /////////////////////CL 運算出來
     err = clEnqueueNDRangeKernel(queue, adder, 1, 0, &work_size, 0, 0, 0, 0);
 
     if(err == CL_SUCCESS) {
         err = clEnqueueReadBuffer(queue, cl_out1_array, CL_TRUE, 0, sizeof(float)*lineCount*4, &tmp_out1_arrayIndex[0], 0, 0, 0);
-        //err = clEnqueueReadBuffer(queue, cl_out1_array, CL_TRUE, 0, sizeof(double)*lineCount*4, &out1_array[0][0], 0, 0, 0);
 
         for (int i=0;i<lineCount;i++){
-            //cout << "Finish 1 : "<<i;
             for (int j=0;j<4;j++){
-                //out1_array[i][j]=tmp_out1_arrayIndex[i*4+j];
-                //out1_array[i][j]=(double)tmp_out1_array[i*4+j];
                 out1_array[i][j]=tmp_out1_arrayIndex[i*4+j];
-                //cout << " , " <<out1_array[i][j];
             }
-            //cout << endl;
         }
         
     }
@@ -244,6 +214,7 @@ void parallel_in2_out1(int arrayXY, int dirTmp, int modAngle, float* dataIn, flo
     clReleaseCommandQueue(queue);
     clReleaseContext(context);
 }
+
 //二維轉一維(無平行)
 void in2_out1(int arrayXY, int dirTmp, int modAngle, float* dataIn, float** out1_array){
     int tmpAngle = dirTmp*modAngle;         //角度
@@ -458,6 +429,7 @@ void parallel_in1_out2(int arrayXY, int dirTmp, int modAngle, float** out1_array
 
     int dataSize = arrayXY*arrayXY;
     size_t work_size = dataSize;
+
     /////////////////////CL 運算出來
     err = clEnqueueNDRangeKernel(queue, adder, 1, 0, &work_size, 0, 0, 0, 0);
 
@@ -492,8 +464,6 @@ void in1_out2(int arrayXY, int dirTmp, int modAngle, float** out1_array, float**
     int lineCount = arrayXY;
     int lineHalf = arrayXY/2;
 
-    //cout << "dirTmp : " << dirTmp << " < " << out1_array[0][2] << " , " << out1_array[0][3] << endl;
-
     //ㄧ維轉二維
     for (int y=0;y<arrayXY;y++){
         for (int x=0;x<arrayXY;x++){
@@ -517,8 +487,8 @@ void in1_out2(int arrayXY, int dirTmp, int modAngle, float** out1_array, float**
     }
 }
 
+//主要運算，從二維轉一維的資料準備，到一維轉二維的實質運算
 void mainRun(int needParallel, int modAngle, int loop, int arrayXY, uchar* dataInOrs, uchar* dataOut){
-
     cout << "~~ 前置作業 二維轉一維 ~~" << endl;
 
     float dataInTmp[arrayXY*arrayXY];
@@ -614,13 +584,14 @@ void mainRun(int needParallel, int modAngle, int loop, int arrayXY, uchar* dataI
 
             //前置作業 上一次的結果，再二維轉一維，待會相減平均用
             //in2_out1(arrayXY,dirTmp,modAngle,out2_array2,ptrOut);
-            if (needParallel==0) {
+            parallel_in2_out1(arrayXY,dirTmp,modAngle,out2_array2,ptrOut);
+            /*if (needParallel==0) {
                 in2_out1(arrayXY,dirTmp,modAngle,out2_array2,ptrOut);
             } else if (needParallel==1) {
                 parallel_in2_out1(arrayXY,dirTmp,modAngle,out2_array2,ptrOut);
             } else {
                 return;
-            }
+            }*/
 
             for (int j=0;j<lineCount;j++){
                 for (int k=0;k<4;k++){
@@ -678,11 +649,8 @@ void mainRun(int needParallel, int modAngle, int loop, int arrayXY, uchar* dataI
     }
 }
 
+//主要運算的Print提示
 void mainVoid(int needParallel, int indexRGB, int modAngle, int loop, int arrayXY, uchar* pdataIn, uchar* pdataOut){
-    /////////////////////開始運算（無平行）
-    //if (needParallel==0) cout << "\n~~ 開始運算（無平行) ~~" << endl;
-    //else if (needParallel==1) cout << "\n~~ 開始運算（有平行) ~~" << endl;
-
     if (needParallel==0){
         if (indexRGB==0) cout << "\n~~ 運算 B （無平行)  ~~" << endl;
         else if (indexRGB==1) cout << "\n~~ 運算 G （無平行)  ~~" << endl;
@@ -695,12 +663,49 @@ void mainVoid(int needParallel, int indexRGB, int modAngle, int loop, int arrayX
     mainRun(needParallel,modAngle,loop,arrayXY,pdataIn,pdataOut);
 }
 
+//時間輸出
+void timePrint(double duration){
+    if (duration > 60) {
+        int tmpMin = (int)duration/60;
+        int tmpSec = (int)duration%60;
+        cout << "It took me clicks (" << tmpMin << "min, " << tmpSec << "s)." << endl;
+    } else if (duration > 1) {
+        cout << "It took me clicks (" << duration << "s)." << endl;
+    } else {
+        cout << "It took me clicks (" << duration*1000 << "ms)." << endl;
+    }
+}
+
+//時間的完整輸出
+void timePrintAll(int needParallel, double duration, double duration0, double duration1){
+    cout << "\n#####################" << endl;
+    cout << "\n完整程式結束，所花時間 : " << endl;
+    timePrint(duration);
+
+    if (needParallel==0){
+        cout << "\n無平行化程式，所花時間 : " << endl;
+        timePrint(duration0);
+
+    } else if (needParallel==1){
+        cout << "\n平行化程式，所花時間 : " << endl;
+        timePrint(duration1);
+
+    } else if (needParallel==2){
+        cout << "\n平行化程式，所花時間 : " << endl;
+        timePrint(duration1);
+
+        cout << "\n無平行化程式，所花時間 : " << endl;
+        timePrint(duration0);
+
+        cout << "\n平行化快了 : " << duration0/duration1 << "倍" << endl;
+    }
+}
+
 int main(int argc, const char * argv[]) {
 
     cout << "\n##程式開始##" << endl;
 
     /////////////////////前置作業 資料準備
-    //const int arrayXY = 100;
     int modAngle = 45;
     int loop = 4;
     int imageNumber = 1;
@@ -730,19 +735,22 @@ int main(int argc, const char * argv[]) {
     cout << "輸入loop :";
     cin >> loop;
 
-    //cout << "輸入是否需要平行(0為否，1為是) :";
-    //cin >> needParallel;
+    cout << "輸入是否需要平行(0為否，1為是，2為兩種都要) :";
+    cin >> needParallel;
 
     cout << "\n##輸入資料確認##" << endl;
     cout << "圖片      : " << imageNumberString << endl;
     cout << "modAngle : " << modAngle << endl;
     cout << "loop     : " << loop << endl;
-    //cout << "needParallel : " << needParallel << endl;
+    cout << "needParallel : " << needParallel << endl;
 
     /////////////////////前置作業 計時開始
 	double omp_get_wtime(void);
-	double startCK, finishCK;
-    double startCK0, finishCK0, startCK1, finishCK1;
+	double startCK=0, finishCK=0;
+    double startCK0=0, finishCK0=0, startCK1=0, finishCK1=0;
+    double duration = 0;
+    double duration0 = 0;
+    double duration1 = 0;
 	startCK = omp_get_wtime();
 
     /////////////////////前置作業 CV 初始化
@@ -867,30 +875,44 @@ int main(int argc, const char * argv[]) {
     cout << "WorkSize       : " << work_size << endl;
     cout << "arrayXY        : " << arrayXY << endl;
 
-    /////////////////////開始運算（無平行）
-    cout << "\n~~ 開始運算（有平行) ~~" << endl;
-    startCK1 = omp_get_wtime();
-    mainVoid(1,0,modAngle,loop,arrayXY,pdataInB,pdataOutB);
-    mainVoid(1,1,modAngle,loop,arrayXY,pdataInG,pdataOutG);
-    mainVoid(1,2,modAngle,loop,arrayXY,pdataInR,pdataOutR);
-    finishCK1 = omp_get_wtime();
-    cout << "\n~~ 運算完畢（有平行) ~~" << endl;
+    /////////////////////開始運算
+    if (needParallel==0){
+        cout << "\n~~ 開始運算（無平行) ~~" << endl;
+        startCK0 = omp_get_wtime();
+        mainVoid(0,0,modAngle,loop,arrayXY,pdataInB,pdataOutB);
+        mainVoid(0,1,modAngle,loop,arrayXY,pdataInG,pdataOutG);
+        mainVoid(0,2,modAngle,loop,arrayXY,pdataInR,pdataOutR);
+        finishCK0 = omp_get_wtime();
+        cout << "\n~~ 運算完畢（無平行) ~~" << endl;
 
-    cout << "\n~~ 開始運算（無平行) ~~" << endl;
-    startCK0 = omp_get_wtime();
-    mainVoid(0,0,modAngle,loop,arrayXY,pdataInB,pdataOutB);
-    mainVoid(0,1,modAngle,loop,arrayXY,pdataInG,pdataOutG);
-    mainVoid(0,2,modAngle,loop,arrayXY,pdataInR,pdataOutR);
-    finishCK0 = omp_get_wtime();
-    cout << "\n~~ 運算完畢（無平行) ~~" << endl;
-    /*if (needParallel==0) cout << "\n~~ 開始運算（無平行) ~~" << endl;
-    else if (needParallel==1) cout << "\n~~ 開始運算（有平行) ~~" << endl;
-    cout << "\n~~ 運算 R ~~" << endl;
-    mainRun(needParallel,modAngle,loop,arrayXY,pdataInR,pdataOutR);
-    cout << "\n~~ 運算 G ~~" << endl;
-    mainRun(needParallel,modAngle,loop,arrayXY,pdataInG,pdataOutG);
-    cout << "\n~~ 運算 B ~~" << endl;
-    mainRun(needParallel,modAngle,loop,arrayXY,pdataInB,pdataOutB);*/
+    } else if (needParallel==1){
+        cout << "\n~~ 開始運算（有平行) ~~" << endl;
+        startCK1 = omp_get_wtime();
+        mainVoid(1,0,modAngle,loop,arrayXY,pdataInB,pdataOutB);
+        mainVoid(1,1,modAngle,loop,arrayXY,pdataInG,pdataOutG);
+        mainVoid(1,2,modAngle,loop,arrayXY,pdataInR,pdataOutR);
+        finishCK1 = omp_get_wtime();
+        cout << "\n~~ 運算完畢（有平行) ~~" << endl;
+
+    } else if (needParallel==2){
+        cout << "\n~~ 開始運算（有平行) ~~" << endl;
+        startCK1 = omp_get_wtime();
+        mainVoid(1,0,modAngle,loop,arrayXY,pdataInB,pdataOutB);
+        mainVoid(1,1,modAngle,loop,arrayXY,pdataInG,pdataOutG);
+        mainVoid(1,2,modAngle,loop,arrayXY,pdataInR,pdataOutR);
+        finishCK1 = omp_get_wtime();
+        cout << "\n~~ 運算完畢（有平行) ~~" << endl;
+
+        cout << "\n#####################" << endl;
+
+        cout << "\n~~ 開始運算（無平行) ~~" << endl;
+        startCK0 = omp_get_wtime();
+        mainVoid(0,0,modAngle,loop,arrayXY,pdataInB,pdataOutB);
+        mainVoid(0,1,modAngle,loop,arrayXY,pdataInG,pdataOutG);
+        mainVoid(0,2,modAngle,loop,arrayXY,pdataInR,pdataOutR);
+        finishCK0 = omp_get_wtime();
+        cout << "\n~~ 運算完畢（無平行) ~~" << endl;
+    }
     
     /////////////////////結束 輸出資料放回
     for (int y=0;y<arrayXY;y++){
@@ -907,48 +929,13 @@ int main(int argc, const char * argv[]) {
             dataOut[tmpId] = dataOutR[tmpId2];*/
         }
     }
+
     /////////////////////收尾 計時結束
-    //if (needParallel==0) cout << "\n~~ 運算完畢（無平行) ~~" << endl;
-    //else if (needParallel==1) cout << "\n~~ 運算完畢（有平行) ~~" << endl;
-	finishCK = omp_get_wtime();
-	double duration = (double)(finishCK - startCK);
-    cout << "\n完整程式結束，所花時間 : " << endl;
-	if (duration > 60) {
-        int tmpMin = (int)duration/60;
-        int tmpSec = (int)duration%60;
-		printf("It took me clicks (%d min, %d s).\n\n", tmpMin, tmpSec);
-	} else if (duration > 1) {
-		printf("It took me clicks (%f s).\n\n", duration);
-	} else {
-		printf("It took me clicks (%f ms).\n\n", duration * 1000);
-	}
-
-    double duration1 = (double)(finishCK1 - startCK1);
-    cout << "\n平行化程式，所花時間 : " << endl;
-	if (duration1 > 60) {
-        int tmpMin = (int)duration1/60;
-        int tmpSec = (int)duration1%60;
-		printf("It took me clicks (%d min, %d s).\n\n", tmpMin, tmpSec);
-	} else if (duration1 > 1) {
-		printf("It took me clicks (%f s).\n\n", duration1);
-	} else {
-		printf("It took me clicks (%f ms).\n\n", duration1 * 1000);
-	}
-
-    double duration0 = (double)(finishCK0 - startCK0);
-    cout << "\n無平行化程式，所花時間 : " << endl;
-	if (duration0 > 60) {
-        int tmpMin = (int)duration0/60;
-        int tmpSec = (int)duration0%60;
-		printf("It took me clicks (%d min, %d s).\n\n", tmpMin, tmpSec);
-	} else if (duration0 > 1) {
-		printf("It took me clicks (%f s).\n\n", duration0);
-	} else {
-		printf("It took me clicks (%f ms).\n\n", duration0 * 1000);
-	}
-
-    cout << "\n平行化快了 : " << duration0/duration1 << "倍" << endl;
-
+    finishCK = omp_get_wtime();
+    duration = (double)(finishCK - startCK);
+    duration0 = (double)(finishCK0 - startCK0);
+    duration1 = (double)(finishCK1 - startCK1);
+    timePrintAll(needParallel,duration,duration0,duration1);
 
     /////////////////////收尾 釋放
     /*free(pdataInR);
